@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Party Floor Planner</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <h1>Party Floor Planner</h1>
+    <p class="sub">10th Floor · 75′ × 62′-6″ · drag to move, click to select, hover for size.</p>
+    <div id="banner" class="banner" style="display:none"></div>
+    <div id="userBar" class="userbar" style="display:none">
+      <span id="userEmail"></span><button id="signOutBtn" class="mini">Sign out</button>
+    </div>
+
+    <h2>Headcount</h2>
+    <div class="stat"><span>Target guests</span><b>85</b></div>
+    <div class="stat"><span>Seats provided</span><b id="seatCount">—</b></div>
+    <div class="stat"><span>Folding chairs used</span><b id="chairCount">—</b></div>
+
+    <h2>Inventory <small>placed / available</small></h2>
+    <div id="inventory"></div>
+
+    <h2>Add a custom item</h2>
+    <div class="field"><label>Name</label><input id="ciName" placeholder="e.g. Photo booth"></div>
+    <div class="grid2">
+      <div class="field"><label>Width (ft)</label><input id="ciW" type="number" min="0.5" step="0.5" value="4"></div>
+      <div class="field"><label>Depth (ft)</label><input id="ciH" type="number" min="0.5" step="0.5" value="4"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Shape</label><select id="ciShape"><option value="rect">Rectangle</option><option value="circle">Circle</option></select></div>
+      <div class="field"><label>Color</label><input id="ciColor" type="color" value="#3d8168"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Seats (optional)</label><input id="ciSeats" type="number" min="0" step="1" value="0"></div>
+      <div class="field"><label>Qty available</label><input id="ciQty" type="number" min="1" step="1" value="1"></div>
+    </div>
+    <button class="btn primary" id="ciAdd">Add to inventory</button>
+
+    <h2>Saved layouts <small id="storeMode"></small></h2>
+    <div class="row-inline">
+      <div class="field" style="flex:1;margin:0"><input id="saveName" placeholder="Layout name"></div>
+      <button class="mini" id="saveBtn" style="height:33px">Save</button>
+    </div>
+    <div id="savesList" style="margin-top:8px"></div>
+
+    <h2>Backup</h2>
+    <button class="btn" id="exportBtn">⬇ Export current layout (.json)</button>
+    <button class="btn" id="importBtn">⬆ Import a layout file</button>
+    <input id="importInput" type="file" accept="application/json,.json" style="display:none">
+
+    <h2>Layout</h2>
+    <button class="btn" id="resetBtn">↺ Reset to recommended layout</button>
+    <button class="btn warn" id="clearBtn">✕ Clear the floor</button>
+
+    <h2>View</h2>
+    <label class="toggle"><input type="checkbox" id="dimToggle" checked> Show dimensions</label>
+    <label class="toggle"><input type="checkbox" id="gridToggle" checked> Show 5′ grid</label>
+    <label class="toggle"><input type="checkbox" id="snapToggle"> Snap to 1′ grid</label>
+    <button class="btn" id="printBtn">🖨 Print / save as PDF</button>
+  </aside>
+
+  <div class="main">
+    <div class="actionbar">
+      <span class="label">Selected:</span>
+      <span class="sel" id="selName">nothing</span>
+      <button class="act" id="rotBtn" disabled>⟳ Rotate 90°</button>
+      <button class="act" id="rot15Btn" disabled>↻ 15°</button>
+      <button class="act" id="dupBtn" disabled>⧉ Duplicate</button>
+      <button class="act danger" id="delBtn" disabled>🗑 Delete</button>
+      <span class="hint">Arrow keys nudge · R rotates · Del removes</span>
+    </div>
+    <div class="scroller">
+      <div id="stage"><svg id="floorSvg"></svg><div id="items"></div></div>
+    </div>
+  </div>
+</div>
+<div id="authOverlay" class="overlay" style="display:none">
+  <div class="auth-card">
+    <h2>Party Floor Planner</h2>
+    <p class="auth-sub">Sign in to save your layouts and sync them across devices.</p>
+    <input id="authEmail" type="email" placeholder="Email" autocomplete="email">
+    <input id="authPass" type="password" placeholder="Password" autocomplete="current-password">
+    <div class="auth-actions">
+      <button id="signInBtn" class="primary">Sign in</button>
+      <button id="signUpBtn">Create account</button>
+    </div>
+    <div id="authMsg" class="auth-msg"></div>
+    <button id="localOnlyBtn" class="linkbtn">Use without an account (this browser only)</button>
+  </div>
+</div>
+<div id="tip"></div>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
