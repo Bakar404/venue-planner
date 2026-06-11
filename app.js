@@ -1,12 +1,28 @@
 "use strict";
 //=================== geometry ===================
-const FT=11, PAD=46, W_FT=75, H_FT=62.5;
+const FT=11, PAD=46, W_FT=75, H_FT=62.5, GUESTS=85;
 const STAGE_W=PAD*2+W_FT*FT, STAGE_H=PAD*2+H_FT*FT;
 const stage=document.getElementById('stage'), itemsLayer=document.getElementById('items'), svg=document.getElementById('floorSvg');
 stage.style.width=STAGE_W+'px'; stage.style.height=STAGE_H+'px';
 svg.setAttribute('width',STAGE_W); svg.setAttribute('height',STAGE_H);
 itemsLayer.style.cssText=`left:${PAD}px;top:${PAD}px;width:${W_FT*FT}px;height:${H_FT*FT}px`;
 const px=ft=>PAD+ft*FT;
+
+// shared fixed-structure data (also used by drawFloor below)
+const WALL_POLY=[[12,3],[71,3],[71,59.5],[12,59.5],[4,51],[4,11]];
+const FIXED_OBSTACLES=[
+  // top cores: elevators, stairs, bathrooms, pantry
+  {x:20,y:4,w:5,h:6},{x:25.5,y:4,w:5,h:6},
+  {x:31.5,y:4,w:6,h:9},
+  {x:52,y:4,w:8,h:11},{x:60,y:4,w:6,h:11},{x:66,y:4,w:5,h:11},
+  // bottom cores: elevators, stairs, employee zone, dressing suite
+  {x:20,y:52.5,w:5,h:6},{x:25.5,y:52.5,w:5,h:6},
+  {x:31.5,y:50,w:6,h:9.5},
+  {x:52,y:49,w:9,h:10.5},{x:61,y:49,w:10,h:10.5},
+  // columns (kept small ~1ft so nearby furniture isn't wrongly flagged)
+  {x:19,y:20,w:1,h:1},{x:35,y:20,w:1,h:1},{x:51.5,y:20,w:1,h:1},
+  {x:19,y:41.5,w:1,h:1},{x:35,y:41.5,w:1,h:1},{x:51.5,y:41.5,w:1,h:1}
+];
 
 function formatFt(ft){
   let f=Math.floor(ft+1e-9), inch=Math.round((ft-f)*12);
@@ -176,7 +192,7 @@ function renderAll(){
   itemsLayer.innerHTML='';
   items.filter(i=>i.type==='zone').forEach(i=>itemsLayer.appendChild(buildItemEl(i)));
   items.filter(i=>i.type!=='zone').forEach(i=>itemsLayer.appendChild(buildItemEl(i)));
-  updateSidebar(); updateActionbar(); scheduleAutosave();
+  updateSidebar(); updateActionbar(); scheduleAutosave(); scheduleSpaceCheck();
 }
 
 //=================== counts + inventory UI ===================
@@ -227,7 +243,7 @@ function duplicate(){const it=items.find(i=>i.id===selId); if(!it)return;
   const copy={...it,id:uid++,x:it.x+2,y:it.y+2}; items.push(copy); renderAll(); select(copy.id);}
 function del(){items=items.filter(i=>i.id!==selId); selId=null; renderAll();}
 function rotate(d){const it=items.find(i=>i.id===selId); if(!it)return; it.rot=(it.rot+d)%360;
-  const el=itemsLayer.querySelector(`[data-id="${it.id}"]`); if(el)applyT(el,it); scheduleAutosave();}
+  const el=itemsLayer.querySelector(`[data-id="${it.id}"]`); if(el)applyT(el,it); scheduleAutosave(); scheduleSpaceCheck();}
 function removeCustomType(id){
   if(items.some(i=>i.type===id) && !confirm('Remove this item type and all '+customTypes[id].label+' placed on the floor?'))return;
   items=items.filter(i=>i.type!==id); delete customTypes[id]; renderAll(); toast('Item type removed');
@@ -270,9 +286,9 @@ itemsLayer.addEventListener('pointermove',e=>{
   if(snap){nx=Math.round(nx);ny=Math.round(ny);}
   const t=getType(it.type);
   nx=Math.max(-1,Math.min(W_FT-t.w+1,nx)); ny=Math.max(-1,Math.min(H_FT-t.h+1,ny));
-  it.x=nx; it.y=ny; applyT(drag.el,it); updateActionbar();
+  it.x=nx; it.y=ny; applyT(drag.el,it); updateActionbar(); scheduleSpaceCheck();
 });
-function endDrag(){if(drag){drag=null; scheduleAutosave();}}
+function endDrag(){if(drag){drag=null; scheduleAutosave(); scheduleSpaceCheck();}}
 itemsLayer.addEventListener('pointerup',endDrag);
 itemsLayer.addEventListener('pointercancel',endDrag);
 stage.addEventListener('pointerdown',e=>{if(e.target===stage||e.target===svg)select(null);});
@@ -302,7 +318,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='r'||e.key==='R'){rotate(90);return;}
   else if(e.key==='Delete'||e.key==='Backspace'){del();return;}
   else return;
-  e.preventDefault(); if(el)applyT(el,it); updateActionbar(); scheduleAutosave();
+  e.preventDefault(); if(el)applyT(el,it); updateActionbar(); scheduleAutosave(); scheduleSpaceCheck();
 });
 
 //=================== toggles ===================
@@ -388,8 +404,7 @@ function drawFloor(){
   let s='';
   if(showGrid){for(let g=0;g<=W_FT;g+=5)s+=line(g,0,g,H_FT,{stroke:'var(--grid)',sw:.6});
     for(let g=0;g<=H_FT;g+=5)s+=line(0,g,W_FT,g,{stroke:'var(--grid)',sw:.6});}
-  const wall=[[12,3],[71,3],[71,59.5],[12,59.5],[4,51],[4,11]];
-  s+=`<polygon points="${wall.map(p=>px(p[0])+','+px(p[1])).join(' ')}" fill="#fff" stroke="var(--ink)" stroke-width="2.4"/>`;
+  s+=`<polygon points="${WALL_POLY.map(p=>px(p[0])+','+px(p[1])).join(' ')}" fill="#fff" stroke="var(--ink)" stroke-width="2.4"/>`;
   s+=`<polygon points="${[[12.6,3.7],[70.3,3.7],[70.3,58.8],[12.6,58.8],[4.8,51],[4.8,11.4]].map(p=>px(p[0])+','+px(p[1])).join(' ')}" fill="none" stroke="var(--ink)" stroke-width="0.8" opacity=".5"/>`;
   s+=`<polygon points="${px(4)},${px(3)} ${px(12)},${px(3)} ${px(4)},${px(11)}" fill="rgba(47,93,138,.07)" stroke="var(--blue)" stroke-width="1"/>`;
   s+=txt(7,6,'ROOF',{size:7})+txt(7,8,'BELOW',{size:7});
@@ -432,6 +447,173 @@ function drawFloor(){
   s+=txt(W_FT/2,H_FT+3.2,'10TH FLOOR · SCALE 1/8" = 1\'-0"',{size:9,fill:'var(--ink)'});
   svg.innerHTML=s;
 }
+
+//=================== space check ===================
+function pointInPoly(pt,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+    if(((yi>pt[1])!==(yj>pt[1]))&&(pt[0]<(xj-xi)*(pt[1]-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+function itemCorners(it,t){
+  const cx=it.x+t.w/2, cy=it.y+t.h/2, rad=it.rot*Math.PI/180;
+  const cos=Math.cos(rad), sin=Math.sin(rad), hw=t.w/2, hh=t.h/2;
+  return [[-hw,-hh],[hw,-hh],[hw,hh],[-hw,hh]].map(([lx,ly])=>[cx+lx*cos-ly*sin,cy+lx*sin+ly*cos]);
+}
+function pointInRotatedRect(px,py,it,t){
+  const cx=it.x+t.w/2, cy=it.y+t.h/2, rad=-it.rot*Math.PI/180;
+  const dx=px-cx, dy=py-cy;
+  const lx=dx*Math.cos(rad)-dy*Math.sin(rad), ly=dx*Math.sin(rad)+dy*Math.cos(rad);
+  return Math.abs(lx)<=t.w/2 && Math.abs(ly)<=t.h/2;
+}
+function rectAxes(corners){
+  return corners.map((p,i)=>{
+    const q=corners[(i+1)%corners.length], ex=q[0]-p[0], ey=q[1]-p[1], len=Math.hypot(ex,ey)||1;
+    return [-ey/len,ex/len];
+  });
+}
+function projectRect(corners,axis){
+  let min=Infinity,max=-Infinity;
+  corners.forEach(([x,y])=>{const d=x*axis[0]+y*axis[1]; if(d<min)min=d; if(d>max)max=d;});
+  return [min,max];
+}
+function rectsOverlap(cA,cB){
+  const eps=1e-9;
+  for(const axis of [...rectAxes(cA),...rectAxes(cB)]){
+    const [minA,maxA]=projectRect(cA,axis), [minB,maxB]=projectRect(cB,axis);
+    if(maxA<=minB+eps||maxB<=minA+eps)return false;
+  }
+  return true;
+}
+function obstacleCorners(ob){return [[ob.x,ob.y],[ob.x+ob.w,ob.y],[ob.x+ob.w,ob.y+ob.h],[ob.x,ob.y+ob.h]];}
+
+function computeUsableGrid(){
+  const cell=0.5, nx=Math.round(W_FT/cell), ny=Math.round(H_FT/cell);
+  const mask=[]; let usableCells=0;
+  for(let gy=0;gy<ny;gy++){
+    mask[gy]=[];
+    for(let gx=0;gx<nx;gx++){
+      const cx=gx*cell+cell/2, cy=gy*cell+cell/2;
+      let ok=pointInPoly([cx,cy],WALL_POLY);
+      if(ok)for(const ob of FIXED_OBSTACLES){
+        if(cx>=ob.x&&cx<=ob.x+ob.w&&cy>=ob.y&&cy<=ob.y+ob.h){ok=false;break;}
+      }
+      mask[gy][gx]=ok; if(ok)usableCells++;
+    }
+  }
+  return {mask,usableCells,cell,nx,ny};
+}
+function computeFurnitureCells(grid){
+  const {mask,cell,nx,ny}=grid;
+  const furn=items.filter(i=>i.type!=='zone').map(it=>{
+    const t=getType(it.type), c=itemCorners(it,t);
+    const xs=c.map(p=>p[0]), ys=c.map(p=>p[1]);
+    return {it,t,minX:Math.min(...xs),maxX:Math.max(...xs),minY:Math.min(...ys),maxY:Math.max(...ys)};
+  });
+  let covered=0;
+  for(let gy=0;gy<ny;gy++)for(let gx=0;gx<nx;gx++){
+    if(!mask[gy][gx])continue;
+    const cx=gx*cell+cell/2, cy=gy*cell+cell/2;
+    for(const f of furn){
+      if(cx<f.minX||cx>f.maxX||cy<f.minY||cy>f.maxY)continue;
+      if(pointInRotatedRect(cx,cy,f.it,f.t)){covered++;break;}
+    }
+  }
+  return covered;
+}
+function computeConflicts(){
+  const furn=items.filter(i=>i.type!=='zone').map(it=>({it,t:getType(it.type),c:itemCorners(it,getType(it.type))}));
+  const ids=new Set(); let count=0, reason='';
+  for(let i=0;i<furn.length;i++){
+    const {it,t,c}=furn[i];
+    const xs=c.map(p=>p[0]), ys=c.map(p=>p[1]);
+    if(Math.min(...xs)<-0.05||Math.max(...xs)>W_FT+0.05||Math.min(...ys)<-0.05||Math.max(...ys)>H_FT+0.05){
+      if(!ids.has(it.id))count++; ids.add(it.id); reason='extends past the wall';
+    }
+    for(const ob of FIXED_OBSTACLES){
+      if(rectsOverlap(c,obstacleCorners(ob))){
+        if(!ids.has(it.id))count++; ids.add(it.id); reason='overlaps a column / core'; break;
+      }
+    }
+    for(let j=i+1;j<furn.length;j++){
+      if(rectsOverlap(c,furn[j].c)){
+        if(!ids.has(it.id)){count++;} if(!ids.has(furn[j].it.id)){count++;}
+        ids.add(it.id); ids.add(furn[j].it.id); reason='overlapping furniture';
+      }
+    }
+  }
+  return {ids,count,reason};
+}
+function computeSpaceCheck(){
+  const grid=computeUsableGrid();
+  const cellArea=grid.cell*grid.cell;
+  const usable=grid.usableCells*cellArea;
+  const used=computeFurnitureCells(grid)*cellArea;
+  const free=Math.max(0,usable-used);
+  const freePerGuest=free/GUESTS;
+  const seated=Math.floor(usable/12), standing=Math.floor(usable/8);
+  let verdict,vclass;
+  if(freePerGuest>=7){verdict='Comfortable';vclass='ok';}
+  else if(freePerGuest>=4){verdict='Tight';vclass='warn';}
+  else{verdict='Cramped';vclass='bad';}
+  const conflicts=computeConflicts();
+  return {usable,used,free,freePerGuest,seated,standing,verdict,vclass,conflicts};
+}
+let spaceCheckTimer=null;
+function scheduleSpaceCheck(){clearTimeout(spaceCheckTimer); spaceCheckTimer=setTimeout(updateSpaceCheck,250);}
+function updateSpaceCheck(){
+  const r=computeSpaceCheck();
+  document.getElementById('scUsable').textContent=Math.round(r.usable).toLocaleString()+' sq ft';
+  document.getElementById('scUsed').textContent=Math.round(r.used).toLocaleString()+' sq ft ('+Math.round(r.usable?r.used/r.usable*100:0)+'%)';
+  document.getElementById('scFree').textContent=Math.round(r.free).toLocaleString()+' sq ft';
+  document.getElementById('scPerGuest').textContent=r.freePerGuest.toFixed(1)+' sq ft';
+  document.getElementById('scCapacity').textContent=`Room comfortably fits ~${r.seated} seated or ~${r.standing} standing.`;
+  const vEl=document.getElementById('scVerdict');
+  vEl.className='badge '+r.vclass; vEl.textContent=r.verdict+' circulation';
+  const cEl=document.getElementById('scConflicts');
+  if(r.conflicts.count===0){cEl.className='badge ok'; cEl.textContent='No overlaps';}
+  else{cEl.className='badge bad'; cEl.textContent=r.conflicts.count+' conflict'+(r.conflicts.count===1?'':'s')+' — '+r.conflicts.reason;}
+  itemsLayer.querySelectorAll('.item').forEach(el=>el.classList.toggle('conflict',r.conflicts.ids.has(+el.dataset.id)));
+}
+
+//=================== measure tool ===================
+const measureSvg=document.getElementById('measureSvg');
+measureSvg.style.cssText=`left:${PAD}px;top:${PAD}px;width:${W_FT*FT}px;height:${H_FT*FT}px;position:absolute;pointer-events:none`;
+measureSvg.setAttribute('width',W_FT*FT); measureSvg.setAttribute('height',H_FT*FT);
+let measuring=false, measureDrag=null;
+function clearMeasure(){measureSvg.innerHTML=''; measureDrag=null;}
+function setMeasuring(on){
+  measuring=on;
+  document.getElementById('measureBtn').classList.toggle('active',measuring);
+  measureSvg.style.pointerEvents=measuring?'auto':'none';
+  measureSvg.style.cursor=measuring?'crosshair':'default';
+  clearMeasure();
+}
+document.getElementById('measureBtn').onclick=()=>setMeasuring(!measuring);
+function drawMeasure(x1,y1,x2,y2){
+  const dist=Math.hypot(x2-x1,y2-y1), mx=(x1+x2)/2*FT, my=(y1+y2)/2*FT;
+  measureSvg.innerHTML=`<line x1="${x1*FT}" y1="${y1*FT}" x2="${x2*FT}" y2="${y2*FT}" stroke="var(--accent)" stroke-width="2" stroke-dasharray="6,4"/>
+    <circle cx="${x1*FT}" cy="${y1*FT}" r="4" fill="var(--accent)"/>
+    <circle cx="${x2*FT}" cy="${y2*FT}" r="4" fill="var(--accent)"/>
+    <text x="${mx}" y="${my-8}" font-size="12" font-weight="700" fill="var(--accent)" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" paint-order="stroke" stroke="#fff" stroke-width="3">${formatFt(dist)}</text>`;
+}
+measureSvg.addEventListener('pointerdown',e=>{
+  if(!measuring)return;
+  const r=measureSvg.getBoundingClientRect();
+  measureDrag={sx:(e.clientX-r.left)/FT, sy:(e.clientY-r.top)/FT};
+  measureSvg.setPointerCapture(e.pointerId); e.preventDefault();
+});
+measureSvg.addEventListener('pointermove',e=>{
+  if(!measuring||!measureDrag)return;
+  const r=measureSvg.getBoundingClientRect();
+  drawMeasure(measureDrag.sx,measureDrag.sy,(e.clientX-r.left)/FT,(e.clientY-r.top)/FT);
+});
+function endMeasureDrag(){measureDrag=null;}
+measureSvg.addEventListener('pointerup',endMeasureDrag);
+measureSvg.addEventListener('pointercancel',endMeasureDrag);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&measuring)clearMeasure();});
 
 //=================== auth + boot ===================
 let sb=null, configured=false, localChosen=false, curUid=null;

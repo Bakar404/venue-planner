@@ -21,6 +21,15 @@
     <div class="stat"><span>Seats provided</span><b id="seatCount">—</b></div>
     <div class="stat"><span>Folding chairs used</span><b id="chairCount">—</b></div>
 
+    <h2>Space check</h2>
+    <div class="stat"><span>Usable open floor</span><b id="scUsable">—</b></div>
+    <div class="stat"><span>Used by furniture</span><b id="scUsed">—</b></div>
+    <div class="stat"><span>Free / circulation</span><b id="scFree">—</b></div>
+    <div class="stat"><span>Free per guest</span><b id="scPerGuest">—</b></div>
+    <p class="sub" id="scCapacity" style="margin:4px 0">—</p>
+    <div id="scVerdict" class="badge"></div>
+    <div id="scConflicts" class="badge"></div>
+
     <h2>Inventory <small>placed / available</small></h2>
     <div id="inventory"></div>
 
@@ -56,6 +65,10 @@
     <button class="btn" id="resetBtn">↺ Reset to recommended layout</button>
     <button class="btn warn" id="clearBtn">✕ Clear the floor</button>
 
+    <h2>Tools</h2>
+    <button class="btn" id="measureBtn">📏 Measure a distance</button>
+    <p class="sub" style="margin:4px 0 0">Drag on the plan to measure; Esc clears. Aim for 3–4′ walkways and 4–5′ of clearance where guests serve at the buffet.</p>
+
     <h2>View</h2>
     <label class="toggle"><input type="checkbox" id="dimToggle" checked> Show dimensions</label>
     <label class="toggle"><input type="checkbox" id="gridToggle" checked> Show 5′ grid</label>
@@ -74,7 +87,7 @@
       <span class="hint">Arrow keys nudge · R rotates · Del removes</span>
     </div>
     <div class="scroller">
-      <div id="stage"><svg id="floorSvg"></svg><div id="items"></div></div>
+      <div id="stage"><svg id="floorSvg"></svg><div id="items"></div><svg id="measureSvg"></svg></div>
     </div>
   </div>
 </div>

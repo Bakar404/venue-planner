@@ -44,6 +44,14 @@ body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);
   border-radius:7px;padding:9px 11px;margin:6px 0;font-size:13px;cursor:pointer;color:var(--ink)}
 .btn:hover{border-color:var(--blue);background:var(--blue-fill)}
 .btn.warn:hover{border-color:var(--accent);background:#f6e7df;color:var(--accent)}
+.btn.active{border-color:var(--accent);background:#f6e7df;color:var(--accent);font-weight:600}
+
+/* space check */
+.badge{display:inline-block;font-size:12px;font-weight:600;padding:4px 9px;border-radius:6px;margin:3px 4px 3px 0}
+.badge:empty{display:none}
+.badge.ok{background:#e7f1e6;color:#3f6b3a;border:1px solid #c7ddc3}
+.badge.warn{background:#fdf3df;color:#92660f;border:1px solid #ecd9ad}
+.badge.bad{background:#fbe7e0;color:#a13f1f;border:1px solid #f0c5b3}
 .toggle{display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0;cursor:pointer}
 .toggle input{accent-color:var(--blue)}
 
@@ -90,6 +98,9 @@ body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);
 .item{position:absolute;cursor:grab;touch-action:none;user-select:none;transform-origin:center center}
 .item:active{cursor:grabbing}
 .item.sel{outline:2px solid var(--accent);outline-offset:2px;z-index:50;border-radius:4px}
+.item.conflict{outline:2px solid #c0392b;outline-offset:2px;z-index:51;border-radius:4px}
+
+#measureSvg{position:absolute;z-index:60}
 .item .lbl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:9px;font-weight:600;
   color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35);white-space:nowrap;pointer-events:none;text-align:center;line-height:1.1}
 .shape{position:absolute;inset:0;border-radius:4px}
