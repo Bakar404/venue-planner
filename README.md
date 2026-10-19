@@ -4,8 +4,6 @@ Plan seating and furniture for any event space, drawn to scale in your browser.
 
 Size the room, mark what cannot move, list the furniture you actually have, then drag tables into place while a live seat count and space check tell you whether everyone fits. There is no account, install or build step, and your plans stay in your browser.
 
-**Live site: [bakar404.github.io/venue-planner](https://bakar404.github.io/venue-planner/)**
-
 ![The sample venue with a table selected and the tape measure reading a 5-foot aisle](docs/screenshots/sample-venue.png)
 
 ## Features
@@ -20,7 +18,7 @@ Size the room, mark what cannot move, list the furniture you actually have, then
 - **Many venues and layouts.** Keep several venues, and save named layouts within each one to compare options.
 - **Local-first.** Autosaves in the browser. Export and import JSON files, download a PNG, print or save as PDF, or share a link that carries the whole plan.
 - **Mouse, touch and keyboard.** Works from a phone to a desktop, with labelled controls and visible focus for keyboard and screen reader users.
-- **Optional sync.** If you host your own copy, connect a free Supabase project so people can sign in and sync venues across devices.
+- **Optional sync.** Connect a free Supabase project of your own so people can sign in and sync venues across devices.
 
 ## Screenshots
 
@@ -34,13 +32,7 @@ Size the room, mark what cannot move, list the furniture you actually have, then
 
 ## Quick start
 
-Open the [live site](https://bakar404.github.io/venue-planner/). On a first visit, a start dialog offers three ways in:
-
-- **Start with a blank room.** Enter a name, the room size and the number of guests. Tick "Add common tables and chairs" for starter furniture you can edit.
-- **Explore the sample venue.** A complete plan for the 75 ft by 62 ft 6 in event floor this tool was first built for, with 85 guests and 102 seats. It stays a preview until you change something; then it is saved as your own copy.
-- **Import a venue file** that you exported earlier.
-
-To run your own copy, serve the folder with any static file server:
+Clone the repository and serve the folder with any static file server:
 
 ```bash
 git clone https://github.com/Bakar404/venue-planner.git
@@ -49,6 +41,12 @@ python3 -m http.server 8000
 ```
 
 Then open http://localhost:8000. Opening `index.html` straight from disk also works. There is nothing to install or build.
+
+On a first visit, a start dialog offers three ways in:
+
+- **Start with a blank room.** Enter a name, the room size and the number of guests. Tick "Add common tables and chairs" for starter furniture you can edit.
+- **Explore the sample venue.** A complete plan for the 75 ft by 62 ft 6 in event floor this tool was first built for, with 85 guests and 102 seats. It stays a preview until you change something; then it is saved as your own copy.
+- **Import a venue file** that you exported earlier.
 
 ## Model your venue
 
@@ -93,7 +91,7 @@ All of these are in the Save & share tab.
 - **Import a venue file**, or drop a file onto the page, to add it as a new venue. Files are validated before anything is saved. Invalid JSON, files from other apps or from a newer version, impossible room sizes and files over 5 MB are rejected with a plain-language message, and individual broken entries are skipped with a warning. Exports from the original planner are accepted too.
 - **Download the plan as PNG** renders a high-resolution image of the plan with its dimensions, caption and scale bar.
 - **Print or save as PDF** prints the plan on its own, with a title.
-- **Copy a link to this plan** compresses the venue into the part of the URL after `#`, which browsers never send to a server. Whoever opens the link gets their own copy, saved as a new venue. The link carries the room, features, inventory and current floor but not saved layouts, and later changes on either side are not shared.
+- **Copy a link to this plan** compresses the venue into the part of the URL after `#`, which browsers never send to a server. Whoever opens the link gets their own copy, saved as a new venue, so it works for anyone who can reach the address you run the planner from. The link carries the room, features, inventory and current floor but not saved layouts, and later changes on either side are not shared.
 
 A venue file looks like this (shortened). All lengths are in feet whatever display unit the venue uses, and `x` and `y` are the top-left corner of each piece.
 
@@ -124,19 +122,19 @@ A venue file looks like this (shortened). All lengths are in feet whatever displ
 
 ## Optional cloud sync
 
-The public site runs in local mode. If you host your own copy, you can let people sign in with an email and password and sync their venues across devices through [Supabase](https://supabase.com):
+By default the planner runs in local mode. To let people sign in with an email and password and sync their venues across devices, connect a [Supabase](https://supabase.com) project of your own:
 
 1. Create a Supabase project. The free tier is enough.
 2. Open the SQL editor and run [`schema.sql`](schema.sql). It creates a `layouts` table with one row per venue, unique on `(user_id, name)`, turns on row level security, and adds select, insert, update and delete policies that only allow rows where `auth.uid() = user_id`.
 3. In the project's API settings, copy the project URL and the `anon` public key into `config.js`. The anon key is designed to be public, and row level security keeps each user's data private. Never put the `service_role` key in this file.
-4. Under Authentication, set the site URL and allowed redirect URLs to the address where you host the app. Email confirmation is on by default, so new users confirm through an emailed link before they can sign in.
+4. Under Authentication, set the site URL and allowed redirect URLs to the address you run the app from, such as `http://localhost:8000`. Email confirmation is on by default, so new users confirm through an emailed link before they can sign in.
 5. If your project uses a custom domain instead of `*.supabase.co`, add that domain to `connect-src` in the Content Security Policy at the top of `index.html`.
 
 Once configured, the Sync section of the Save & share tab offers sign-in. The Supabase client library is loaded from jsDelivr only when sync is configured. Sync merges in both directions: the newer copy of a venue wins, and deleting a venue on one device deletes it everywhere. Rows saved by the original planner are imported once as a venue.
 
 ## Tech and project structure
 
-Plain HTML, CSS and JavaScript, with no framework, no build step and no runtime dependencies apart from the optional Supabase client. The plan is an SVG drawn to scale. The scripts are classic scripts that share one small `VP` namespace, so the same files run on GitHub Pages, on any static server and from disk. It targets current versions of Chrome, Edge, Firefox and Safari.
+Plain HTML, CSS and JavaScript, with no framework, no build step and no runtime dependencies apart from the optional Supabase client. The plan is an SVG drawn to scale. The scripts are classic scripts that share one small `VP` namespace, so the same files run from any static server or straight from disk. It targets current versions of Chrome, Edge, Firefox and Safari.
 
 ```text
 index.html           Markup, dialogs and Content Security Policy
