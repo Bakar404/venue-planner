@@ -1,103 +1,162 @@
-# Party Floor Planner
+# Venue Planner
 
-An interactive, drag-and-drop floor planner for the 10th-floor venue. Drawn to scale
-(75′ × 62′-6″) with all fixed structure shown: elevators, stairs, bathrooms, pantry,
-employee zone, dressing suite, structural columns, and roof-below cutouts.
+Plan seating and furniture for any event space, drawn to scale in your browser.
 
-It's a static site with no build step and no backend, so it runs by opening `index.html`
-and hosts on GitHub Pages as-is.
+Size the room, mark what cannot move, list the furniture you actually have, then drag tables into place while a live seat count and space check tell you whether everyone fits. There is no account, install or build step, and your plans stay in your browser.
 
-## Files
+**Live site: [bakar404.github.io/venue-planner](https://bakar404.github.io/venue-planner/)**
 
-- `index.html` — page structure
-- `styles.css` — all styling
-- `app.js` — planner logic (rendering, drag, save/load, custom items, auth, floor plan)
-- `config.js` — your Supabase URL + anon key (fill in for login + cloud sync)
-- `schema.sql` — database table + security policies to run in Supabase
-- `README.md` — this file
+![The sample venue with a table selected and the tape measure reading a 5-foot aisle](docs/screenshots/sample-venue.png)
 
 ## Features
 
-- **Drag, rotate, duplicate, delete** any furniture piece. Arrow keys nudge, `R` rotates, `Del` removes.
-- **Hover any item to see its size** (e.g. `Dining · 8′ × 7′ · 10 seats`).
-- **Live counters**: seats provided vs. 85 target, folding chairs used, and placed-vs-available for every inventory item.
-- **Add your own inventory items** — name, width, depth, shape, color, seats, and quantity. They appear in the palette and on the floor.
-- **Accounts + cloud storage** via Supabase: sign in and your saved layouts live in a database, synced across any device. Without setup it falls back to local-only mode.
-- **Save and load named layouts**, plus **Export / Import** to a `.json` file to share with the venue.
-- **Print / save as PDF** for a clean copy.
-- Recommended 90-seat layout loads by default.
+- **Any room.** Width and depth in feet and inches or in meters, from 4 to 1,000 feet per side.
+- **Fixed features.** Columns, walls and partitions, doors, emergency exits, windows, a stage, bar, buffet counter, dance floor, stairs, elevators, rooms, no-go zones, shaded areas and text labels. Drag to move, drag the corner handle to resize, rotate, or type exact values.
+- **Your inventory.** Item types for banquet and round tables, rows of chairs, sofas or any other piece, each with a size, seats, the quantity you own and a color. The planner will not place more than you own.
+- **Live headcount.** Seats provided against the guest target, chairs used against chairs owned, and placed against available for every item type.
+- **Space check.** Usable floor after fixed features, area used by furniture, free space per guest with a circulation rating, and flags for furniture that overlaps, extends past a wall, blocks a door or exit, or sits on the dance floor.
+- **Tape measure.** Drag between any two points to read the distance, for example to check an aisle.
+- **Forgiving editing.** Undo and redo, duplicate, rotate in 90 or 15 degree steps, keyboard nudging, optional grid snapping and dimension strings.
+- **Many venues and layouts.** Keep several venues, and save named layouts within each one to compare options.
+- **Local-first.** Autosaves in the browser. Export and import JSON files, download a PNG, print or save as PDF, or share a link that carries the whole plan.
+- **Mouse, touch and keyboard.** Works from a phone to a desktop, with labelled controls and visible focus for keyboard and screen reader users.
+- **Optional sync.** If you host your own copy, connect a free Supabase project so people can sign in and sync venues across devices.
 
-## Login & cloud storage (Supabase)
+## Screenshots
 
-Storage and login run on [Supabase](https://supabase.com) (free tier is plenty). The
-frontend stays static — Supabase is the backend. Setup is about five minutes:
+| Start from a blank room, the sample or a file | Your own venue with live headcount and space check |
+| --- | --- |
+| ![The start dialog](docs/screenshots/onboarding.png) | ![A custom 64 by 44 foot venue with round tables, a stage and a dance floor](docs/screenshots/custom-venue.png) |
 
-1. Create a free account at supabase.com and start a **New project**. Pick a name and a
-   database password (you won't need the password in the app).
-2. When the project finishes provisioning, open **SQL Editor → New query**, paste the
-   contents of `schema.sql`, and click **Run**. This creates the `layouts` table and the
-   row-level-security policies that keep each account's data private.
-3. Open **Project Settings → API** and copy two values:
-   - **Project URL**
-   - the **anon public** key
-4. Paste them into `config.js`, replacing the placeholders.
-5. (Optional, for faster testing) In **Authentication → Providers → Email**, turn off
-   "Confirm email" so new accounts can sign in immediately. Otherwise users confirm via a
-   link emailed to them.
-6. In **Authentication → URL Configuration**, add your GitHub Pages URL (and
-   `http://localhost` if testing locally) to the allowed redirect/site URLs.
+| Fixed features with exact size and rotation | Phone layout |
+| --- | --- |
+| ![The Room tab with the stage selected](docs/screenshots/room-editor.png) | ![The planner on a phone](docs/screenshots/mobile.png) |
 
-That's it. Reload the app and you'll get a sign-in screen. Each account's named layouts and
-its autosaved working copy are stored in the database, so you can open the planner on your
-laptop and your phone and see the same plans.
+## Quick start
 
-If you leave `config.js` with the placeholder values, the app skips login and runs in
-local-only mode (layouts saved in that browser), so it still works before you set anything up.
+Open the [live site](https://bakar404.github.io/venue-planner/). On a first visit, a start dialog offers three ways in:
 
-I can't create the Supabase project for you — it lives in your account — but everything
-above is wired and ready; you only paste in two values and run one SQL script.
+- **Start with a blank room.** Enter a name, the room size and the number of guests. Tick "Add common tables and chairs" for starter furniture you can edit.
+- **Explore the sample venue.** A complete plan for the 75 ft by 62 ft 6 in event floor this tool was first built for, with 85 guests and 102 seats. It stays a preview until you change something; then it is saved as your own copy.
+- **Import a venue file** that you exported earlier.
 
-## Run locally
-
-Open `index.html` in any browser, or run a tiny static server in the folder so the
-relative files load cleanly:
+To run your own copy, serve the folder with any static file server:
 
 ```bash
-python3 -m http.server
-# then visit the printed http://localhost:8000
+git clone https://github.com/Bakar404/venue-planner.git
+cd venue-planner
+python3 -m http.server 8000
 ```
 
-Without Supabase configured it runs in local-only mode. With `config.js` filled in you'll
-get the login screen and cloud storage.
+Then open http://localhost:8000. Opening `index.html` straight from disk also works. There is nothing to install or build.
 
-## Host on GitHub Pages
+## Model your venue
 
-1. Create a new GitHub repository (e.g. `party-planner`).
-2. Add the files to the repo:
-   ```bash
-   git init
-   git add index.html styles.css app.js config.js schema.sql README.md
-   git commit -m "Floor planner"
-   git branch -M main
-   git remote add origin https://github.com/<your-username>/party-planner.git
-   git push -u origin main
-   ```
-3. In the repo: **Settings → Pages → Build and deployment → Source: Deploy from a branch**,
-   pick branch **main** and folder **/ (root)**, then **Save**.
-4. Wait ~1 minute. Your planner will be live at
-   `https://<your-username>.github.io/party-planner/`.
+1. **Room.** In the Room tab, name the venue, set the width (left to right) and depth (top to bottom), and choose feet and inches or meters. Lengths can be typed as `62' 6"`, `62'-6"`, `62 6`, `62.5`, `19.05m` or `1905cm`.
+2. **Fixed features.** Choose a feature to add it in the middle of the plan, drag it into place, and drag its corner handle to resize it. Select it to type an exact position, size, rotation, label or shape. Solid features such as columns, walls, a stage or a bar are subtracted from the usable floor. Doors, exits and the dance floor keep their area but must stay clear. Windows, shaded areas and labels are drawing only.
+3. **Furniture.** In the Inventory tab, add an item type for each kind of furniture: name, short label for the plan, kind, width, depth, seats each, how many you have (leave blank for no limit) and color. Enter how many chairs you own; tables with chairs and rows of chairs draw from that count.
+4. **Layout.** In the Plan tab, set the guest target and use the + buttons under Add furniture. Each piece lands on the nearest clear spot; drag it where you want it. The headcount and space check update as you go.
+5. **Compare.** Save the floor as a named layout, try another arrangement, and switch between them.
 
-## How storage works
+The circulation rating is based on free floor per guest: 7 sq ft or more is comfortable, 4 to 7 is tight, and less than 4 is cramped. The seated and standing capacities assume 12 and 8 sq ft of usable floor per person. These are planning rules of thumb, not a substitute for your venue's occupancy limit or local fire code.
 
-- **Signed in (Supabase configured):** named layouts and your autosaved working copy are
-  written to the `layouts` table, scoped to your account. Open the app anywhere, sign in,
-  and your plans are there.
-- **Local-only mode (no Supabase, or "use without an account"):** layouts save in that
-  browser's local storage.
-- **Export / Import** works in both modes for backups or handing a plan to someone else.
+### Keyboard
 
-## Adjusting the floor plan
+With the plan focused, Tab moves through the furniture, or through the fixed features while the Room tab is open.
 
-All fixed structure is drawn in the `drawFloor()` function in `app.js`, using feet as the
-unit (`px(ft)` maps feet to pixels). Inventory totals live in `BUILTIN_INV`, and the default
-layout is in `recommended()`.
+| Keys | Action |
+| --- | --- |
+| Arrow keys | Nudge the selection 1 ft, or 5 ft with Shift (0.25 m and 1 m in metric) |
+| R, Shift+R | Rotate 90 or 15 degrees |
+| Delete, Backspace | Remove the selection |
+| Enter | Edit the selection's details |
+| Ctrl+D | Duplicate |
+| Ctrl+Z; Ctrl+Y or Ctrl+Shift+Z | Undo; redo |
+| M | Turn the tape measure on or off |
+| Escape | Clear the measurement, leave measure mode, then deselect |
+
+On a Mac, use Cmd in place of Ctrl.
+
+## Data and privacy
+
+Venues, layouts and preferences are stored in your browser's local storage, under keys that start with `vp.`. Nothing is uploaded: with the default `config.js`, the app never contacts any server other than the one serving the page, and a Content Security Policy limits what the page can load or connect to.
+
+Local storage belongs to one browser on one device, and clearing site data deletes it. Export a file to keep a backup or to move a venue to another device.
+
+If you used the original single-venue version of this planner in the same browser, its data (the `epp_current` and `epp_layouts` keys) is imported once into a venue named "My 10th-floor plan", including your saved layouts. The old keys are left untouched.
+
+## Export, import and sharing
+
+All of these are in the Save & share tab.
+
+- **Export this venue (.json)** writes one file with the room, features, inventory, the current floor and every saved layout.
+- **Import a venue file**, or drop a file onto the page, to add it as a new venue. Files are validated before anything is saved. Invalid JSON, files from other apps or from a newer version, impossible room sizes and files over 5 MB are rejected with a plain-language message, and individual broken entries are skipped with a warning. Exports from the original planner are accepted too.
+- **Download the plan as PNG** renders a high-resolution image of the plan with its dimensions, caption and scale bar.
+- **Print or save as PDF** prints the plan on its own, with a title.
+- **Copy a link to this plan** compresses the venue into the part of the URL after `#`, which browsers never send to a server. Whoever opens the link gets their own copy, saved as a new venue. The link carries the room, features, inventory and current floor but not saved layouts, and later changes on either side are not shared.
+
+A venue file looks like this (shortened). All lengths are in feet whatever display unit the venue uses, and `x` and `y` are the top-left corner of each piece.
+
+```json
+{
+  "app": "venue-planner",
+  "format": 2,
+  "venue": {
+    "name": "Harbor Hall",
+    "units": "ft",
+    "room": { "w": 64, "h": 44 },
+    "target": 100,
+    "chairs": 110,
+    "features": [
+      { "kind": "stage", "x": 22, "y": 0, "w": 20, "h": 8, "rot": 0, "label": "STAGE" }
+    ],
+    "types": [
+      { "id": "round60", "name": "60-inch round table", "label": "Round", "style": "round",
+        "w": 5, "h": 5, "seats": 8, "qty": 12, "color": "#6f9a8c" }
+    ],
+    "items": [
+      { "type": "round60", "x": 1.5, "y": 3, "rot": 0 }
+    ],
+    "layouts": []
+  }
+}
+```
+
+## Optional cloud sync
+
+The public site runs in local mode. If you host your own copy, you can let people sign in with an email and password and sync their venues across devices through [Supabase](https://supabase.com):
+
+1. Create a Supabase project. The free tier is enough.
+2. Open the SQL editor and run [`schema.sql`](schema.sql). It creates a `layouts` table with one row per venue, unique on `(user_id, name)`, turns on row level security, and adds select, insert, update and delete policies that only allow rows where `auth.uid() = user_id`.
+3. In the project's API settings, copy the project URL and the `anon` public key into `config.js`. The anon key is designed to be public, and row level security keeps each user's data private. Never put the `service_role` key in this file.
+4. Under Authentication, set the site URL and allowed redirect URLs to the address where you host the app. Email confirmation is on by default, so new users confirm through an emailed link before they can sign in.
+5. If your project uses a custom domain instead of `*.supabase.co`, add that domain to `connect-src` in the Content Security Policy at the top of `index.html`.
+
+Once configured, the Sync section of the Save & share tab offers sign-in. The Supabase client library is loaded from jsDelivr only when sync is configured. Sync merges in both directions: the newer copy of a venue wins, and deleting a venue on one device deletes it everywhere. Rows saved by the original planner are imported once as a venue.
+
+## Tech and project structure
+
+Plain HTML, CSS and JavaScript, with no framework, no build step and no runtime dependencies apart from the optional Supabase client. The plan is an SVG drawn to scale. The scripts are classic scripts that share one small `VP` namespace, so the same files run on GitHub Pages, on any static server and from disk. It targets current versions of Chrome, Edge, Firefox and Safari.
+
+```text
+index.html           Markup, dialogs and Content Security Policy
+styles.css           Styles, including the phone layout and print styles
+config.js            Optional Supabase settings, empty by default
+schema.sql           Table and row level security for optional sync
+favicon.svg          Site icon
+js/geometry.js       Polygon, rotation and overlap helpers
+js/model.js          Venue model, templates, validation, space check, import, export and migration
+js/storage.js        Local storage, share-link encoding and optional Supabase sync
+js/plan.js           SVG rendering of the room, features and furniture
+js/app.js            User interface: tabs, dialogs, dragging, inspector, tools and undo
+tests/model.test.js  Unit tests for the model and storage modules
+docs/screenshots/    Images used in this README
+```
+
+Templates are data, not drawing code. The sample venue and the blank room are built from the same model as any user venue, so a new template is a new data definition in `js/model.js`.
+
+Run the unit tests with Node.js 18 or later:
+
+```bash
+node --test tests/*.test.js
+```
