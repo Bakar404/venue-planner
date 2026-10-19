@@ -3,113 +3,268 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Party Floor Planner</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Venue Planner</title>
+<meta name="description" content="Plan seating and furniture layouts for any event space. Size the room, add fixed features and your inventory, then drag tables into place. Free, and everything stays in your browser.">
+<meta name="theme-color" content="#2f5d8a">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<a class="skip" href="#planScroller">Skip to the floor plan</a>
 <div class="app">
-  <aside class="panel">
-    <h1>Party Floor Planner</h1>
-    <p class="sub">10th Floor · 75′ × 62′-6″ · drag to move, click to select, hover for size.</p>
-    <div id="banner" class="banner" style="display:none"></div>
-    <div id="userBar" class="userbar" style="display:none">
-      <span id="userEmail"></span><button id="signOutBtn" class="mini">Sign out</button>
+  <header class="brand">
+    <div class="brand-row">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="2" y="2" width="28" height="28" rx="6" fill="#2f5d8a"/><rect x="7" y="7" width="18" height="18" rx="1.5" fill="none" stroke="#f6f4ee" stroke-width="1.8"/><circle cx="13.5" cy="13.5" r="3.2" fill="#f6f4ee"/><rect x="15.5" y="19" width="6.5" height="2.6" rx=".6" fill="#e2a27c"/></svg>
+      <div class="brand-text">
+        <h1>Venue Planner</h1>
+        <p class="tagline">Floor plans for any event space</p>
+      </div>
+      <button type="button" class="mini primary new-btn" data-act="new-venue" data-icon="plus">New</button>
+    </div>
+    <label class="field venue-pick"><span>Venue</span><select id="venueSelect"></select></label>
+    <p class="sub" id="venueSub"></p>
+  </header>
+  <aside class="panel" aria-label="Venue tools">
+    <div id="banner" class="banner" role="alert" hidden></div>
+    <div id="userBar" class="userbar" hidden></div>
+
+    <div class="tabs" role="tablist" id="tabs" aria-label="Planner sections">
+      <button type="button" role="tab" id="tab-plan" aria-controls="panel-plan" aria-selected="true">Plan</button>
+      <button type="button" role="tab" id="tab-room" aria-controls="panel-room" aria-selected="false" tabindex="-1">Room</button>
+      <button type="button" role="tab" id="tab-inventory" aria-controls="panel-inventory" aria-selected="false" tabindex="-1">Inventory</button>
+      <button type="button" role="tab" id="tab-share" aria-controls="panel-share" aria-selected="false" tabindex="-1">Save &amp; share</button>
     </div>
 
-    <h2>Headcount</h2>
-    <div class="stat"><span>Target guests</span><b>85</b></div>
-    <div class="stat"><span>Seats provided</span><b id="seatCount">—</b></div>
-    <div class="stat"><span>Folding chairs used</span><b id="chairCount">—</b></div>
+    <section id="panel-plan" class="tabpanel" role="tabpanel" aria-labelledby="tab-plan">
+      <div id="nextSteps" hidden></div>
 
-    <h2>Space check</h2>
-    <div class="stat"><span>Usable open floor</span><b id="scUsable">—</b></div>
-    <div class="stat"><span>Used by furniture</span><b id="scUsed">—</b></div>
-    <div class="stat"><span>Free / circulation</span><b id="scFree">—</b></div>
-    <div class="stat"><span>Free per guest</span><b id="scPerGuest">—</b></div>
-    <p class="sub" id="scCapacity" style="margin:4px 0">—</p>
-    <div id="scVerdict" class="badge"></div>
-    <div id="scConflicts" class="badge"></div>
+      <h2>Headcount</h2>
+      <div class="stat stat-input"><label for="targetInput">Target guests</label><input id="targetInput" type="number" min="0" max="100000" step="1" inputmode="numeric" placeholder="0" autocomplete="off"></div>
+      <div class="stat"><span>Seats provided</span><b id="seatCount">0</b></div>
+      <div class="stat"><span>Chairs used</span><b id="chairCount">0</b></div>
+      <p id="seatNote" class="note"></p>
 
-    <h2>Inventory <small>placed / available</small></h2>
-    <div id="inventory"></div>
+      <h2>Space check</h2>
+      <div class="stat"><span>Usable open floor</span><b id="scUsable"></b></div>
+      <div class="stat"><span>Used by furniture</span><b id="scUsed"></b></div>
+      <div class="stat"><span>Free / circulation</span><b id="scFree"></b></div>
+      <div class="stat"><span>Free per guest</span><b id="scPerGuest"></b></div>
+      <p class="sub capacity" id="scCapacity"></p>
+      <div class="badges"><span id="scVerdict" class="badge"></span><button type="button" id="scConflicts" class="badge" data-act="conflict-cycle" disabled></button></div>
 
-    <h2>Add a custom item</h2>
-    <div class="field"><label>Name</label><input id="ciName" placeholder="e.g. Photo booth"></div>
-    <div class="grid2">
-      <div class="field"><label>Width (ft)</label><input id="ciW" type="number" min="0.5" step="0.5" value="4"></div>
-      <div class="field"><label>Depth (ft)</label><input id="ciH" type="number" min="0.5" step="0.5" value="4"></div>
-    </div>
-    <div class="grid2">
-      <div class="field"><label>Shape</label><select id="ciShape"><option value="rect">Rectangle</option><option value="circle">Circle</option></select></div>
-      <div class="field"><label>Color</label><input id="ciColor" type="color" value="#3d8168"></div>
-    </div>
-    <div class="grid2">
-      <div class="field"><label>Seats (optional)</label><input id="ciSeats" type="number" min="0" step="1" value="0"></div>
-      <div class="field"><label>Qty available</label><input id="ciQty" type="number" min="1" step="1" value="1"></div>
-    </div>
-    <button class="btn primary" id="ciAdd">Add to inventory</button>
+      <h2>Add furniture <small>placed / available</small></h2>
+      <div id="palette"></div>
 
-    <h2>Saved layouts <small id="storeMode"></small></h2>
-    <div class="row-inline">
-      <div class="field" style="flex:1;margin:0"><input id="saveName" placeholder="Layout name"></div>
-      <button class="mini" id="saveBtn" style="height:33px">Save</button>
-    </div>
-    <div id="savesList" style="margin-top:8px"></div>
+      <h2>Saved layouts</h2>
+      <form id="layoutForm" class="row-inline" novalidate>
+        <label class="sr-only" for="layoutName">Layout name</label>
+        <input id="layoutName" class="input grow" maxlength="80" placeholder="Name this layout" autocomplete="off">
+        <button type="submit" class="mini primary">Save</button>
+      </form>
+      <div id="layoutList"></div>
+      <button type="button" class="btn warn" data-act="clear-floor" data-icon="trash">Clear the floor</button>
 
-    <h2>Backup</h2>
-    <button class="btn" id="exportBtn">⬇ Export current layout (.json)</button>
-    <button class="btn" id="importBtn">⬆ Import a layout file</button>
-    <input id="importInput" type="file" accept="application/json,.json" style="display:none">
+      <h2>Tools</h2>
+      <button type="button" class="btn" id="measureTool" data-act="measure" aria-pressed="false" data-icon="ruler">Measure a distance</button>
+      <p id="measureOut" class="measure-out" aria-live="polite"></p>
+      <p id="walkTip" class="sub"></p>
 
-    <h2>Layout</h2>
-    <button class="btn" id="resetBtn">↺ Reset to recommended layout</button>
-    <button class="btn warn" id="clearBtn">✕ Clear the floor</button>
+      <h2>View</h2>
+      <label class="toggle"><input type="checkbox" id="dimToggle"> Show dimensions</label>
+      <label class="toggle"><input type="checkbox" id="gridToggle"> <span id="gridLabel">Show grid</span></label>
+      <label class="toggle"><input type="checkbox" id="snapToggle"> <span id="snapLabel">Snap to grid</span></label>
+    </section>
 
-    <h2>Tools</h2>
-    <button class="btn" id="measureBtn">📏 Measure a distance</button>
-    <p class="sub" style="margin:4px 0 0">Drag on the plan to measure; Esc clears. Aim for 3–4′ walkways and 4–5′ of clearance where guests serve at the buffet.</p>
+    <section id="panel-room" class="tabpanel" role="tabpanel" aria-labelledby="tab-room" hidden>
+      <h2>Room</h2>
+      <label class="field"><span>Venue name</span><input id="roomName" maxlength="80" autocomplete="off"></label>
+      <div class="grid2">
+        <label class="field"><span>Width (left to right)</span><input id="roomW" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="roomHelp roomError"></label>
+        <label class="field"><span>Depth (top to bottom)</span><input id="roomH" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="roomHelp roomError"></label>
+      </div>
+      <p id="roomHelp" class="help"></p>
+      <p id="roomError" class="field-error" role="alert"></p>
+      <label class="field"><span>Units</span><select id="roomUnits"><option value="ft">Feet and inches</option><option value="m">Meters</option></select></label>
+      <label class="field"><span>Caption under the plan (optional)</span><input id="roomCaption" maxlength="120" autocomplete="off"></label>
+      <p id="outlineNote" class="help" hidden>This room has angled walls from its template. They stretch when you resize the room. <button type="button" class="linkbtn inline" data-act="rect-outline">Use a plain rectangle</button></p>
 
-    <h2>View</h2>
-    <label class="toggle"><input type="checkbox" id="dimToggle" checked> Show dimensions</label>
-    <label class="toggle"><input type="checkbox" id="gridToggle" checked> Show 5′ grid</label>
-    <label class="toggle"><input type="checkbox" id="snapToggle"> Snap to 1′ grid</label>
-    <button class="btn" id="printBtn">🖨 Print / save as PDF</button>
+      <h2>Fixed features <small id="featCount"></small></h2>
+      <p class="help">Add anything that cannot move. It appears in the middle of the plan: drag it into place and drag its corner handle to resize it. Select a feature to edit its exact size, rotation and label.</p>
+      <div id="kindGrid" class="kind-grid" role="group" aria-label="Add a fixed feature"></div>
+      <div id="featureList"></div>
+    </section>
+
+    <section id="panel-inventory" class="tabpanel" role="tabpanel" aria-labelledby="tab-inventory" hidden>
+      <h2>Your furniture</h2>
+      <div id="typeList"></div>
+
+      <form id="typeForm" class="card form-card" novalidate aria-labelledby="typeFormTitle">
+        <h3 id="typeFormTitle">Add an item type</h3>
+        <label class="field"><span>Name</span><input id="tfName" maxlength="80" placeholder="For example, 6-foot banquet table" autocomplete="off"></label>
+        <label class="field"><span>Short label on the plan (optional)</span><input id="tfLabel" maxlength="40" placeholder="For example, 6&prime; table" autocomplete="off"></label>
+        <label class="field"><span>Kind</span><select id="tfStyle" aria-describedby="tfHelp"></select></label>
+        <p id="tfHelp" class="help"></p>
+        <div class="grid2">
+          <label class="field"><span>Width</span><input id="tfW" inputmode="decimal" autocomplete="off" spellcheck="false"></label>
+          <label class="field"><span>Depth</span><input id="tfH" inputmode="decimal" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <div class="grid2">
+          <label class="field"><span>Seats each</span><input id="tfSeats" type="number" min="0" max="200" step="1" inputmode="numeric"></label>
+          <label class="field"><span>How many you have</span><input id="tfQty" type="number" min="0" max="100000" step="1" inputmode="numeric" placeholder="No limit"></label>
+        </div>
+        <label class="field color-field"><span>Color on the plan</span><input id="tfColor" type="color"></label>
+        <p id="tfError" class="field-error" role="alert"></p>
+        <div class="row-inline">
+          <button type="submit" id="tfSubmit" class="btn primary">Add item type</button>
+          <button type="button" id="tfCancel" class="btn" data-act="type-cancel" hidden>Cancel</button>
+        </div>
+      </form>
+
+      <h2>Chairs</h2>
+      <label class="field"><span>Chairs you have</span><input id="chairsInput" type="number" min="0" max="100000" step="1" inputmode="numeric" placeholder="No limit" aria-describedby="chairsHelp" autocomplete="off"></label>
+      <p id="chairsHelp" class="help">Tables with chairs and rows of chairs use these, so you can see if you will run short. Leave it blank if you have plenty.</p>
+    </section>
+
+    <section id="panel-share" class="tabpanel" role="tabpanel" aria-labelledby="tab-share" hidden>
+      <h2>Your venues</h2>
+      <p class="help">Venues and layouts save automatically in this browser. Nothing is uploaded.</p>
+      <div id="venueList"></div>
+      <div class="button-row">
+        <button type="button" class="mini primary" data-act="new-venue" data-icon="plus">New venue</button>
+        <button type="button" class="mini" data-act="venue-dup" data-icon="copy">Duplicate</button>
+        <button type="button" class="mini x" data-act="venue-delete-current" data-icon="trash">Delete this venue</button>
+      </div>
+
+      <h2>Backup</h2>
+      <button type="button" class="btn" data-act="export-json" data-icon="download">Export this venue (.json)</button>
+      <button type="button" class="btn" data-act="import-json" data-icon="upload">Import a venue file</button>
+      <p class="help">A file holds the room, features, furniture, the current floor and every saved layout. You can also drop a file onto the page.</p>
+
+      <h2>Image and print</h2>
+      <button type="button" class="btn" id="pngBtn" data-act="export-png" data-icon="image">Download the plan as PNG</button>
+      <button type="button" class="btn" data-act="print" data-icon="print">Print or save as PDF</button>
+
+      <h2>Share link</h2>
+      <button type="button" class="btn" data-act="share-link" data-icon="link">Copy a link to this plan</button>
+      <p id="shareMsg" class="help" aria-live="polite"></p>
+      <label class="sr-only" for="shareOut">Share link</label>
+      <textarea id="shareOut" class="share-out" rows="3" readonly hidden></textarea>
+
+      <h2>Sync</h2>
+      <div id="syncBox"></div>
+    </section>
   </aside>
 
-  <div class="main">
-    <div class="actionbar">
+  <main class="main" id="main">
+    <div class="actionbar" role="toolbar" aria-label="Selected item">
       <span class="label">Selected:</span>
-      <span class="sel" id="selName">nothing</span>
-      <button class="act" id="rotBtn" disabled>⟳ Rotate 90°</button>
-      <button class="act" id="rot15Btn" disabled>↻ 15°</button>
-      <button class="act" id="dupBtn" disabled>⧉ Duplicate</button>
-      <button class="act danger" id="delBtn" disabled>🗑 Delete</button>
-      <span class="hint">Arrow keys nudge · R rotates · Del removes</span>
+      <span class="sel" id="selName">Nothing</span>
+      <span id="selWarn" class="badge bad" hidden></span>
+      <div class="acts">
+        <button type="button" class="act" id="rotBtn" data-act="rot90" data-icon="rotate" title="Rotate 90&deg; (R)" disabled><span class="txt">Rotate 90&deg;</span></button>
+        <button type="button" class="act" id="rot15Btn" data-act="rot15" data-icon="rotateSmall" title="Rotate 15&deg; (Shift+R)" aria-label="Rotate 15 degrees" disabled><span class="txt">15&deg;</span></button>
+        <button type="button" class="act" id="dupBtn" data-act="dup" data-icon="copy" title="Duplicate (Ctrl+D)" disabled><span class="txt">Duplicate</span></button>
+        <button type="button" class="act danger" id="delBtn" data-act="del" data-icon="trash" title="Delete (Delete key)" disabled><span class="txt">Delete</span></button>
+        <button type="button" class="act details-btn" id="detailsBtn" data-act="details" data-icon="edit" aria-expanded="false" aria-controls="inspector" disabled><span class="txt">Details</span></button>
+      </div>
+      <div class="acts history">
+        <button type="button" class="act" id="undoBtn" data-act="undo" data-icon="undo" aria-label="Undo" title="Undo (Ctrl+Z)" disabled></button>
+        <button type="button" class="act" id="redoBtn" data-act="redo" data-icon="redo" aria-label="Redo" title="Redo (Ctrl+Y)" disabled></button>
+      </div>
     </div>
-    <div class="scroller">
-      <div id="stage"><svg id="floorSvg"></svg><div id="items"></div><svg id="measureSvg"></svg></div>
-    </div>
-  </div>
-</div>
-<div id="authOverlay" class="overlay" style="display:none">
-  <div class="auth-card">
-    <h2>Party Floor Planner</h2>
-    <p class="auth-sub">Sign in to save your layouts and sync them across devices.</p>
-    <input id="authEmail" type="email" placeholder="Email" autocomplete="email">
-    <input id="authPass" type="password" placeholder="Password" autocomplete="current-password">
-    <div class="auth-actions">
-      <button id="signInBtn" class="primary">Sign in</button>
-      <button id="signUpBtn">Create account</button>
-    </div>
-    <div id="authMsg" class="auth-msg"></div>
-    <button id="localOnlyBtn" class="linkbtn">Use without an account (this browser only)</button>
-  </div>
-</div>
-<div id="tip"></div>
-<div id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <form id="inspector" class="inspector is-empty" aria-label="Details of the selection" novalidate>
+      <p class="insp-empty">Select furniture or a feature on the plan to edit its label, exact position and rotation.</p>
+      <div id="inspFields" class="insp-fields"></div>
+      <p id="inError" class="field-error" role="alert"></p>
+    </form>
+
+    <div id="printHead" class="print-head"><h2 id="printTitle"></h2><p id="printMeta"></p></div>
+
+    <div class="plan-wrap">
+      <div class="scroller" id="planScroller" tabindex="0" role="region" aria-label="Floor plan">
+        <svg id="planSvg" xmlns="http://www.w3.org/2000/svg" tabindex="-1" role="group" aria-label="Floor plan. Tab to the furniture or features to select them."><g id="scene"></g><g id="overlay"></g><g id="measureLayer"></g></svg>
+      </div>
+      <p id="planEmpty" class="plan-empty" hidden>The floor is empty. Use the <b>+</b> buttons under <b>Add furniture</b> to place tables, then drag them into position.</p>
+    </div>
+    <div class="planbar">
+      <p class="hint" id="kbdHint"></p>
+      <div class="viewbar" role="toolbar" aria-label="Plan view">
+        <button type="button" class="act" id="measureBtn" data-act="measure" data-icon="ruler" aria-pressed="false" title="Measure a distance (M)"><span class="txt">Measure</span></button>
+        <button type="button" class="act" data-act="zoom-out" data-icon="zoomOut" aria-label="Zoom out" title="Zoom out"></button>
+        <button type="button" class="act" id="zoomFitBtn" data-act="zoom-fit" data-icon="fit" aria-label="Fit the plan to the window" title="Fit to window"><span id="zoomLabel">100%</span></button>
+        <button type="button" class="act" data-act="zoom-in" data-icon="zoomIn" aria-label="Zoom in" title="Zoom in"></button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<dialog id="startDialog" class="dialog start-dialog" aria-labelledby="startTitle">
+  <form id="startForm" novalidate>
+    <button type="button" class="dialog-close" data-act="start-close" data-icon="x" aria-label="Close" title="Close"></button>
+    <h2 id="startTitle" tabindex="-1">Plan any event space</h2>
+    <div id="startIntro" class="start-intro">
+      <p>Lay out tables and seating for a room of any size, then check that everyone fits.</p>
+      <ol class="how">
+        <li><b>Size the room</b> and add columns, doors, a stage or a bar.</li>
+        <li><b>List your furniture</b>: tables, seats per table and how many you have.</li>
+        <li><b>Drag it into place</b> while the seat count and space check update.</li>
+      </ol>
+    </div>
+    <fieldset class="start-blank">
+      <legend>Start with a blank room</legend>
+      <label class="field"><span>Venue name</span><input id="nvName" maxlength="80" placeholder="My venue" autocomplete="off"></label>
+      <div class="grid3">
+        <label class="field"><span>Width</span><input id="nvW" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="nvError"></label>
+        <label class="field"><span>Depth</span><input id="nvH" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="nvError"></label>
+        <label class="field"><span>Units</span><select id="nvUnits"><option value="ft">Feet</option><option value="m">Meters</option></select></label>
+      </div>
+      <label class="field"><span>Number of guests</span><input id="nvGuests" type="number" min="0" max="100000" step="1" inputmode="numeric" aria-describedby="nvError"></label>
+      <label class="toggle"><input type="checkbox" id="nvStarter"> Add common tables and chairs to edit later</label>
+      <p id="nvError" class="field-error" role="alert"></p>
+      <button type="submit" class="btn primary">Create venue</button>
+    </fieldset>
+    <div class="start-alt">
+      <span class="or">or</span>
+      <button type="button" class="btn" data-act="start-sample">Explore the sample venue</button>
+      <button type="button" class="btn" data-act="start-import" data-icon="upload">Import a venue file</button>
+    </div>
+    <p class="help privacy">Your plans are saved in this browser only. Nothing is uploaded.</p>
+  </form>
+</dialog>
+
+<dialog id="askDialog" class="dialog ask-dialog" aria-labelledby="askTitle" aria-describedby="askMsg">
+  <h2 id="askTitle"></h2>
+  <p id="askMsg"></p>
+  <div id="askButtons" class="dialog-actions"></div>
+</dialog>
+
+<dialog id="authDialog" class="dialog auth-dialog" aria-labelledby="authTitle">
+  <form id="authForm" novalidate>
+    <h2 id="authTitle">Sign in to sync</h2>
+    <p class="help">Back up your venues and open them on any device.</p>
+    <label class="field"><span>Email</span><input id="authEmail" type="email" autocomplete="email" spellcheck="false"></label>
+    <label class="field"><span>Password</span><input id="authPass" type="password" autocomplete="current-password"></label>
+    <p id="authMsg" class="help" aria-live="polite"></p>
+    <div class="dialog-actions">
+      <button type="button" data-act="auth-cancel">Cancel</button>
+      <button type="button" data-act="auth-signup">Create account</button>
+      <button type="submit" class="primary">Sign in</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="tip" aria-hidden="true"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="srStatus" class="sr-only" role="status" aria-live="polite"></div>
+<input id="importInput" type="file" accept="application/json,.json" hidden>
+
 <script src="config.js"></script>
-<script src="app.js"></script>
+<script src="js/geometry.js"></script>
+<script src="js/model.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/plan.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
