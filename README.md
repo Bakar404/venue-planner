@@ -2,9 +2,21 @@
 
 Plan seating and furniture for any event space, drawn to scale in your browser.
 
-Size the room, mark what cannot move, list the furniture you actually have, then drag tables into place while a live seat count and space check tell you whether everyone fits. There is no account, install or build step, and your plans stay in your browser.
+[![CI](https://github.com/Bakar404/venue-planner/actions/workflows/ci.yml/badge.svg)](https://github.com/Bakar404/venue-planner/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Live demo](https://img.shields.io/badge/Live_demo-GitHub_Pages-2ea44f)](https://bakar404.github.io/venue-planner/)
 
 ![The sample venue with a table selected and the tape measure reading a 5-foot aisle](docs/screenshots/sample-venue.png)
+
+**Try it: https://bakar404.github.io/venue-planner/**
+
+Size the room, mark what cannot move, list the furniture you actually have, then drag tables into place while a live seat count and space check tell you whether everyone fits. There is no account, install or build step, and your plans stay in your browser.
+
+## How it works
+
+`index.html` loads `config.js` and the classic scripts in dependency order, sharing a `VP` namespace. `js/app.js` handles input and edits the venue model; `js/model.js` validates data and calculates headcounts and space checks using `js/geometry.js`. `js/plan.js` turns the model into the SVG floor plan, styled by `styles.css`.
+
+Edits update the drawing and statistics, then autosave through `js/storage.js` to browser local storage. That module also handles share-link encoding and optional Supabase sync; JSON import/export lives in the model. Local storage remains the source of truth, with no backend required.
 
 ## Features
 
@@ -158,3 +170,7 @@ Run the unit tests with Node.js 18 or later:
 ```bash
 node --test tests/*.test.js
 ```
+
+## License
+
+[MIT](LICENSE) - Copyright (c) 2026 Ahmed Abdelsalam.
